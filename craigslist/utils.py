@@ -2,9 +2,9 @@ from bs4 import BeautifulSoup
 import requests
 from requests.exceptions import RequestException
 
-ALL_SITES_URL = 'http://www.craigslist.org/about/sites'
-SITE_URL = 'http://%s.craigslist.org'
-USER_AGENT = 'Mozilla/5.0'
+ALL_SITES_URL = 'https://www.craigslist.org/about/sites'
+SITE_URL = 'https://%s.craigslist.org'
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15'
 
 
 def bs(content):

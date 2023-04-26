@@ -14,6 +14,10 @@ from six.moves import range
 
 from . import utils
 
+import sys
+from selenium import webdriver
+import time
+
 ALL_SITES = utils.get_all_sites()  # All the Craiglist sites
 RESULTS_PER_REQUEST = 100  # Craigslist returns 100 results per request
 
@@ -51,10 +55,18 @@ class CraigslistBase(object):
         'price_desc': 'pricedsc',
     }
 
+    driver = {}
+
     def __init__(self, site=None, area=None, category=None, filters=None,
-                 log_level=logging.WARNING):
+                 log_level=logging.ERROR):
         # Logging
-        self.set_logger(log_level, init=True)
+        self.set_logger(logging.DEBUG, init=True)
+
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-gpu")
+        self.driver = webdriver.Chrome(options=chrome_options)
 
         self.site = site or self.default_site
         if self.site not in ALL_SITES:
@@ -119,7 +131,7 @@ class CraigslistBase(object):
     def set_logger(self, log_level, init=False):
         if init:
             self.logger = logging.getLogger('python-craiglist')
-            self.handler = logging.StreamHandler()
+            self.handler = logging.StreamHandler(sys.stdout)
             self.logger.addHandler(self.handler)
         self.logger.setLevel(log_level)
         self.handler.setLevel(log_level)
@@ -143,12 +155,13 @@ class CraigslistBase(object):
         """
 
         if soup is None:
-            response = utils.requests_get(self.url, params=self.filters,
-                                          logger=self.logger)
-            self.logger.info('GET %s', response.url)
-            self.logger.info('Response code: %s', response.status_code)
-            response.raise_for_status()  # Something failed?
-            soup = utils.bs(response.content)
+            # response = utils.requests_get(self.url, params=self.filters,
+            #                               logger=self.logger)
+            # self.logger.info('GET %s', response.url)
+            # self.logger.info('Response code: %s', response.status_code)
+            # response.raise_for_status()  # Something failed?
+            self.driver.get(self.url)
+            soup = utils.bs(self.driver.page_source)
 
         totalcount = soup.find('span', {'class': 'totalcount'})
         return int(totalcount.text) if totalcount else None
@@ -177,18 +190,22 @@ class CraigslistBase(object):
 
         while True:
             self.filters['s'] = start
-            response = utils.requests_get(self.url, params=self.filters,
-                                          logger=self.logger)
-            self.logger.info('GET %s', response.url)
-            self.logger.info('Response code: %s', response.status_code)
-            response.raise_for_status()  # Something failed?
+            # response = utils.requests_get(self.url, params=self.filters,
+            #                               logger=self.logger)
+            # self.logger.info('GET %s', response.url)
+            # self.logger.info('Response code: %s', response.status_code)
+            # response.raise_for_status()  # Something failed?
+            self.driver.get(self.url)
 
-            soup = utils.bs(response.content)
+            time.sleep(2)
+
+            soup = utils.bs(self.driver.page_source)
             if not total:
                 total = self.get_results_approx_count(soup=soup)
 
-            rows = soup.find('ul', {'class': 'rows'})
-            for row in rows.find_all('li', {'class': 'result-row'},
+            rows = soup.find('ol')
+
+            for row in rows.find_all('li', {'class': 'cl-search-result'},
                                      recursive=False):
                 if limit is not None and results_yielded >= limit:
                     break
@@ -210,18 +227,14 @@ class CraigslistBase(object):
         id = row.attrs['data-pid']
         repost_of = row.attrs.get('data-repost-of')
 
-        link = row.find('a', {'class': 'hdrlnk'})
+        link = row.find('a', {'class': 'titlestring'})
         name = link.text
         url = urljoin(self.url, link.attrs['href'])
 
-        time = row.find('time')
-        if time:
-            datetime = time.attrs['datetime']
-        else:
-            pl = row.find('span', {'class': 'pl'})
-            datetime = pl.text.split(':')[0].strip() if pl else None
-        price = row.find('span', {'class': 'result-price'})
-        where = row.find('span', {'class': 'result-hood'})
+        time = row.find('div', {'class': 'meta'})
+        datetime = time.text
+        price = row.find('span', {'class': 'priceinfo'})
+        where = row.find('div', {'class': 'meta'})
         if where:
             where = where.text.strip()[1:-1]  # remove ()
         tags_span = row.find('span', {'class': 'result-tags'})
