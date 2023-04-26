@@ -195,7 +195,9 @@ class CraigslistBase(object):
             # self.logger.info('GET %s', response.url)
             # self.logger.info('Response code: %s', response.status_code)
             # response.raise_for_status()  # Something failed?
-            self.driver.get("https://sfbay.craigslist.org/search/sfc/apa?min_bedrooms=1#search=1~gallery~0~0")
+            self.driver.get(self.url)
+
+            print(self.url)
 
             time.sleep(2)
 
