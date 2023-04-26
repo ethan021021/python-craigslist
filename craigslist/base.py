@@ -197,6 +197,7 @@ class CraigslistBase(object):
             # response.raise_for_status()  # Something failed?
             self.driver.get(self.url)
 
+            print('hello')
             print(self.url)
 
             time.sleep(2)
@@ -379,15 +380,17 @@ class CraigslistBase(object):
                     break
 
     def fetch_content(self, url):
-        response = utils.requests_get(url, logger=self.logger)
-        self.logger.info('GET %s', response.url)
-        self.logger.info('Response code: %s', response.status_code)
+        # response = utils.requests_get(url, logger=self.logger)
+        self.driver.get(url)
+        return utils.bs(self.driver.page_source)
+        # self.logger.info('GET %s', response.url)
+        # self.logger.info('Response code: %s', response.status_code)
 
-        if response.ok:
-            return utils.bs(response.content)
+        # if response.ok:
+        #     return utils.bs(response.content)
 
-        self.logger.warning("GET %s returned not OK response code: %s "
-                            "(skipping)", url, response.status_code)
+        # self.logger.warning("GET %s returned not OK response code: %s "
+        #                     "(skipping)", url, response.status_code)
         return None
 
     def geotag_results(self, results, workers=8):
