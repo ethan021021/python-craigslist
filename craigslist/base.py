@@ -231,9 +231,10 @@ class CraigslistBase(object):
         id = row.attrs['data-pid']
         repost_of = row.attrs.get('data-repost-of')
 
-        link = row.find('a', {'class': 'titlestring'})
+        link = row.find('span', {'class': 'label'})
         name = link.text
-        url = urljoin(self.url, link.attrs['href'])
+        a = row.find('a', {'class': 'main'})
+        url = a.attrs['href']
 
         time = row.find('div', {'class': 'meta'})
         datetime = time.text
